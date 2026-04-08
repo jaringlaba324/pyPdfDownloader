@@ -11,11 +11,11 @@ from urllib.parse import urlparse
 # delete download folder
 import shutil
 
-# timeout_duration = 60
-# ACCESS_KEY = os.getenv("B2_ACCESS_KEY_ID")
-# SECRET_KEY = os.getenv("B2_SECRET_ACCESS_KEY")
-# ENDPOINT = os.getenv("B2_ENDPOINT")
-# BUCKET_NAME = os.getenv("B2_BUCKET_NAME")
+timeout_duration = 60
+ACCESS_KEY = os.getenv("B2_ACCESS_KEY_ID")
+SECRET_KEY = os.getenv("B2_SECRET_ACCESS_KEY")
+ENDPOINT = os.getenv("B2_ENDPOINT")
+BUCKET_NAME = os.getenv("B2_BUCKET_NAME")
 
 
 
