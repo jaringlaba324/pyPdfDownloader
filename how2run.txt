@@ -1,0 +1,5 @@
+1. open cmd
+2. run > py autodownloaderverschedbasedPauseable.py
+3. done
+
+p.s check runner py/phyton/phyton3
