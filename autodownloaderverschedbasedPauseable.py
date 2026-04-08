@@ -1,21 +1,23 @@
 from datetime import datetime, timedelta
 
 import os
-import fitz
 import time, uuid, shutil
-from io import BytesIO
 
+# outside library
+import fitz
 import requests
+# outside library
+
 from urllib.parse import urlparse
 
 # delete download folder
 import shutil
 
-timeout_duration = 60
-ACCESS_KEY = os.getenv("B2_ACCESS_KEY_ID")
-SECRET_KEY = os.getenv("B2_SECRET_ACCESS_KEY")
-ENDPOINT = os.getenv("B2_ENDPOINT")
-BUCKET_NAME = os.getenv("B2_BUCKET_NAME")
+
+# ACCESS_KEY = os.getenv("B2_ACCESS_KEY_ID")
+# SECRET_KEY = os.getenv("B2_SECRET_ACCESS_KEY")
+# ENDPOINT = os.getenv("B2_ENDPOINT")
+# BUCKET_NAME = os.getenv("B2_BUCKET_NAME")
 
 
 
@@ -33,13 +35,13 @@ BUCKET_NAME = os.getenv("B2_BUCKET_NAME")
 #                 return result  # success
 #         except OperationalError as e:  # common for deadlocks/locks
 #             attempt += 1
-#             print(f"[Retry {attempt}/{retries}] OperationalError: {e}")
+#             print_and_log(f"[Retry {attempt}/{retries}] OperationalError: {e}")
 #             if attempt < retries:
 #                 time.sleep(delay)
 #             else:
 #                 raise
 #         except SQLAlchemyError as e:  # other SQLAlchemy errors
-#             print(f"Non-retryable SQLAlchemy error: {e}")
+#             print_and_log(f"Non-retryable SQLAlchemy error: {e}")
 #             raise     
 
 # ────────────────────────────────
@@ -60,7 +62,7 @@ def sliceUrlLink(url):
 
 
 def getScheduleStatus(url):
-    print("Checking status in main_schedule:", url)
+    print_and_log("Checking status in main_schedule:", url)
     sched_idx = sliceUrlLink(url)
     if not sched_idx:
         return None
@@ -88,7 +90,7 @@ def getScheduleStatus(url):
         return None
         
     except Exception as e:
-        print(f"Cannot determine query result, proceeds to default choice... - {e}")
+        print_and_log(f"Cannot determine query result, proceeds to default choice... - {e}")
         return None
     
 
@@ -99,6 +101,7 @@ def downloadexcel(no, url, save_folder, max_retries=100, delay_between_retries=1
         final_filename = ""
         safe_title = ""
         try:
+            timeout_duration = 60
             response = requests.get(url, stream=True, timeout=timeout_duration)
             if response.status_code == 200:
                 # Simpan sementara
@@ -128,31 +131,31 @@ def downloadexcel(no, url, save_folder, max_retries=100, delay_between_retries=1
 
                 # os.rename(temp_filename, final_filename)
                 os.replace(temp_filename, final_filename)
-                print(f"No {no} : Berhasil mendownload: {final_filename}")
+                print_and_log(f"No {no} : Berhasil mendownload: {final_filename}")
                 return attempt, safe_title, 'success'
             elif response.status_code == 404:
-                print(f"Link {url} status 404, skipping...")
+                print_and_log(f"Link {url} status 404, skipping...")
                 return attempt, safe_title, 'failed'    
             else:
                 attempt += 1
-                print(f"No {no} : Gagal attempt {attempt}/{max_retries} dengan kode : {response.status_code}")
+                print_and_log(f"No {no} : Gagal attempt {attempt}/{max_retries} dengan kode : {response.status_code}")
                 if attempt < max_retries:
-                    print(f"No {no} : Mencoba ulang dalam {delay_between_retries} detik...")
+                    print_and_log(f"No {no} : Mencoba ulang dalam {delay_between_retries} detik...")
                     time.sleep(delay_between_retries)
                 else:
-                    print(f"No {no} : Gagal setelah {max_retries} percobaan.")
+                    print_and_log(f"No {no} : Gagal setelah {max_retries} percobaan.")
                     return attempt, safe_title, 'failed'    
 
         except requests.exceptions.RequestException as e:
             attempt += 1
-            print(f"No {no} : Gagal attempt {attempt}/{max_retries} - {e}")
+            print_and_log(f"No {no} : Gagal attempt {attempt}/{max_retries} - {e}")
             if attempt < max_retries:
-                print(f"No {no} : Mencoba ulang dalam {delay_between_retries} detik...")
+                print_and_log(f"No {no} : Mencoba ulang dalam {delay_between_retries} detik...")
                 time.sleep(delay_between_retries)
             else:
-                print(f"No {no} : Gagal setelah {max_retries} percobaan.")
+                print_and_log(f"No {no} : Gagal setelah {max_retries} percobaan.")
         except Exception as e:
-            print(f"No {no} : Error tidak terduga saat mendownload {url}: {e}")
+            print_and_log(f"No {no} : Error tidak terduga saat mendownload {url}: {e}")
 
     return attempt, safe_title, 'failed'
 
@@ -172,7 +175,7 @@ def zip_downloads_folder(save_folder):
 
 
     shutil.make_archive(zip_filename.replace(".zip", ""), "zip", save_folder)
-    print(f"All files zipped successfully : {zip_filename}")
+    print_and_log(f"All files zipped successfully : {zip_filename}")
 
     # Remove all files & subdirectories from downloads folder
     for file_or_folder in os.listdir(save_folder):
@@ -183,11 +186,11 @@ def zip_downloads_folder(save_folder):
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)  # Remove subdirectory
         except Exception as e:
-            print(f"Error deleting {file_path}: {e}")
+            print_and_log(f"Error deleting {file_path}: {e}")
 
 
     shutil.rmtree(save_folder)
-    print(f"Emptied folder: {save_folder}")
+    print_and_log(f"Emptied folder: {save_folder}")
 
     return fileName
 
@@ -201,9 +204,9 @@ def move_files_done_pending(section, filename, root_path):
         dst = os.path.join(root_path, section, filename)
         shutil.move(src, dst)
         
-        print(f"Moving {src} to {dst}")
+        print_and_log(f"Moving {src} to {dst}")
     except Exception as e:
-        print(f"Failed to move PENDING file: {filename} into '{root_path}/{section}', {e}")
+        print_and_log(f"Failed to move PENDING file: {filename} into '{root_path}/{section}', {e}")
 
 def collect_query_sched(table_name):
     try:
@@ -214,13 +217,12 @@ def collect_query_sched(table_name):
 
         if r.status_code != 200:
             # r.raise_for_status()
-            print("STATUS:", r.status_code)
-            print("RESPONSE:", r.text)
+            print_and_log(f"HTTP error | status={r.status_code} | response={r.text}")
             return None
 
         try:
             data = r.json()
-            print(data)
+            # print_and_log(data)
 
             if isinstance(data, dict):
                 return data.get("sched_idx")
@@ -234,7 +236,7 @@ def collect_query_sched(table_name):
         return None
 
     except Exception as e:
-        print(f"Error: {e}")
+        print_and_log(f"Error: {e}")
         return None
     
     
@@ -255,13 +257,12 @@ def update_query_sched(table_name, status_download, sched_idx):
         
         if r.status_code != 200:
             # r.raise_for_status()
-            print("STATUS:", r.status_code)
-            print("RESPONSE:", r.text)
+            print_and_log(f"HTTP error | status={r.status_code} | response={r.text}")
             return False
         
         return True
     except Exception as e:
-        print(f"Exception triggered: {e}")
+        print_and_log(f"Exception triggered: {e}")
         return False
     
 
@@ -279,58 +280,71 @@ def upload_file_sched(result_download, save_folder, table_name, sched_idx):
 
             r = requests.post(post_url, files=files, data=data)
 
-            # print("STATUS:", r.status_code)
-            # print("RESPONSE:", r.text)
         if r.status_code == 200:
             try:
                 res = r.json()
                 if res.get("status") == "success":
                     os.remove(file_path)
+                    print_and_log(f"Uploaded & deleted: {result_download}")
                     return True
                 else:
-                    print("Upload response not success:", res)
+                    print_and_log(f"Uploaded but failed to delete: {e}")
                     return False
             except:
+                print_and_log(f"Invalid JSON | status={r.status_code} | response={r.text}")
                 return False
+        else:
+            print_and_log(f"HTTP error | status={r.status_code} | response={r.text}")
+            return False
         
-        try:
-            os.remove(file_path)
-            print(f"Uploaded & deleted: {result_download}")
-        except Exception as e:
-            print(f"Uploaded but failed to delete: {e}")
-        return True
 
     except Exception as e:
-        print(f"Upload error: {e}")
+        print_and_log(f"Upload error: {e}")
         return False
     
+
+#chimichanga
+START_TIME = datetime.now().strftime("%Y%m%d_%H%M%S")
+LOG_FILE = f"process_{START_TIME}.log"
+
+def print_and_log(msg):
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    full_msg = f"[{now}] {msg}"
     
+    print(full_msg)
+    
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(full_msg + "\n")
+        
 def main():
     if 1 == 1:
         try:
             # table_name = input("Target table_name with sched_idx: ")
             table_name = 'backup_main_schedule_2025_09_2025_12'
-            
+
             save_folder = f"resources/downloads/upload_back"
             os.makedirs(save_folder, exist_ok=True)
 
             if 'bread' != 'key':
                 list_sched_idx = collect_query_sched(table_name)
                 
-                print(list_sched_idx)
+                print_and_log(list_sched_idx)
                 if list_sched_idx:
                     main_num = 1
                     
                     for sched_idx in list_sched_idx:
-                        print(f"starting auto with col: {sched_idx}")
+                        print_and_log(f"Downloading sched_idx: {sched_idx}")
                         
                         url = f'https://fms.jadintracker.id/print/prints/download_pdf_selesai/{sched_idx}'
                         try:
                             if is_valid_url(url):
                                 # Mark sched as pending
-                                update_query_sched(table_name, 'pending', sched_idx)
+                                update_res = update_query_sched(table_name, 'pending', sched_idx)
+                                if not update_res:
+                                    print_and_log(f"Failed to update status of: {result_download}")
+                                    return
                                 
-                                print(f"Attempting to download this link: {url}")
+                                print_and_log(f"Attempting to download this link: {url}")
                                 attempt, result_download, status_success = downloadexcel(f"{main_num}", url, save_folder)
                                 
                                 if result_download:
@@ -338,10 +352,15 @@ def main():
                                         # Upload back to server
                                         if upload_file_sched(result_download, save_folder, table_name, sched_idx):
                                             # Mark sched as done
-                                            update_query_sched(table_name, 'done', sched_idx)
-                                            print(f"Successfully uploaded {result_download}")
+                                            update_res = update_query_sched(table_name, 'done', sched_idx)
+                                            if not update_res:
+                                                print_and_log(f"Failed to update status of: {result_download}")
+                                                return
+                                            
+                                            print_and_log(f"Successfully uploaded {result_download}")
                                         else:
-                                            print(f"Upload failed for {sched_idx}")
+                                            print_and_log(f"Upload failed for {sched_idx}")
+                                            return
                                     else:
                                         raise Exception("no status_success")
                                 else:
@@ -351,9 +370,9 @@ def main():
                             
                             main_num += 1
                         except Exception as e:
-                            print(f"Failed URL: {url} | Reason: {e}")
+                            print_and_log(f"Failed URL: {url} | Reason: {e}")
         except Exception as e:
-            print(f"Error : {e}")
+            print_and_log(f"Error : {e}")
 
 
 # compiler to test a feature
