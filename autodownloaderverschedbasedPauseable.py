@@ -320,7 +320,7 @@ def main():
     if 1 == 1:
         try:
             # table_name = input("Target table_name with sched_idx: ")
-            table_name = 'backup_main_schedule_2021'
+            table_name = 'backup_main_schedule_2021_full'
 
             save_folder = f"resources/downloads/upload_back"
             os.makedirs(save_folder, exist_ok=True)
